@@ -1,18 +1,41 @@
-﻿using System.Text.Json;
-using System.Net.Http;
+﻿using Microsoft.Extensions.Http;
+using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 namespace DataAccessLayer
 {
     public class WeatherServices : IWeatherServices
     {
+        private readonly IHttpClientFactory _httpClientFactory;
+        public WeatherServices(IHttpClientFactory httpClientFactory)
+        {
+            _httpClientFactory = httpClientFactory;
+        }
         public object GetWeatherDetails()
         {
-            HttpClient httpClient = new HttpClient();
+            #region .NetFramework version of HttpClient
+            //HttpClient httpClient = new HttpClient();
+            //var url = "http://localhost:5257/WeatherForecast";
+            //HttpResponseMessage responseMessage = httpClient.GetAsync(url).Result;
+            //object response = responseMessage.Content.ReadAsAsync<object>().Result;
+            //return response;
+            #endregion
+
+            #region .NetCore Version of HttpClient
             var url = "http://localhost:5257/WeatherForecast";
-            HttpResponseMessage responseMessage = httpClient.GetAsync(url).Result;
-            var response = JsonConvert.SerializeObject(responseMessage.Content.ReadAsAsync<object>().Result);
+            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, url)
+            {
+                Headers =
+                {
+                    { HeaderNames.Accept, "application/json" },
+                    { HeaderNames.UserAgent, "HttpRequestsSample" }
+                }
+            };
+
+            var httpClient = _httpClientFactory.CreateClient();
+            var httpResponseMessage = httpClient.SendAsync(httpRequestMessage);
+            var response =JsonConvert.SerializeObject(httpResponseMessage.Result.Content.ReadAsAsync<object>().Result);
             return response;
+            #endregion
         }
     }
 }
